@@ -37,7 +37,7 @@ export function AdminLockForm({ locksAt }: { locksAt: string }) {
         </span>
       </div>
       <p className="mt-1 text-sm text-charcoal/70">
-        When predictions freeze and picks become public (Group Stage + OG Full Run).
+        When everyone&apos;s Full World Cup Prediction freezes and picks become public.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <input

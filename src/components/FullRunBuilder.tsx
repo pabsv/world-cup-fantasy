@@ -3,24 +3,16 @@
 import { useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Team, Group } from "@/lib/types";
-import {
-  R32,
-  KO,
-  ROUND_LABEL,
-  FINAL_MATCH,
-  resolveBracket,
-  type Resolved,
-  type Round,
-} from "@/lib/bracket";
+import { bracketProgress, resolveBracket } from "@/lib/bracket";
 import { GroupRank } from "./GroupRank";
+import { BracketTree } from "./BracketTree";
 import { Flag } from "./Flag";
 
-type Step = "groups" | "thirds" | "bracket" | "review";
-const STEPS: { key: Step; label: string }[] = [
+type Step = "groups" | "thirds" | "bracket";
+const TABS: { key: Step; label: string }[] = [
   { key: "groups", label: "Groups" },
-  { key: "thirds", label: "Thirds" },
-  { key: "bracket", label: "Bracket" },
-  { key: "review", label: "Review" },
+  { key: "thirds", label: "Best 3rd" },
+  { key: "bracket", label: "Knockout" },
 ];
 
 export function FullRunBuilder({
@@ -75,6 +67,7 @@ export function FullRunBuilder({
     () => resolveBracket(groupOrder, thirds, winners),
     [groupOrder, thirds, winners],
   );
+  const ko = useMemo(() => bracketProgress(winners), [winners]);
 
   // ── persistence ──────────────────────────────────────────────────────────
   async function saveGroup(groupId: string, ranking: string[]) {
@@ -150,11 +143,27 @@ export function FullRunBuilder({
     saveBracket(thirds, next);
   }
 
-  const champion = resolved[FINAL_MATCH]?.winner ?? null;
+  // advance button changes per step
+  const advance =
+    step === "groups"
+      ? { label: "Advance to Best 3rd", ready: allGroupsDone, go: () => setStep("thirds") }
+      : step === "thirds"
+        ? { label: "Advance to Knockout", ready: thirds.length === 8, go: () => setStep("bracket") }
+        : null;
 
   return (
     <div className="space-y-5">
-      <Stepper step={step} setStep={setStep} allGroupsDone={allGroupsDone} thirdsCount={thirds.length} />
+      <BracketHeader
+        step={step}
+        setStep={setStep}
+        groupsDone={completeGroups.length}
+        thirdsCount={thirds.length}
+        ko={ko}
+        saved={step === "bracket" ? bracketSaved : undefined}
+        advance={advance}
+        allGroupsDone={allGroupsDone}
+        userId={userId}
+      />
 
       {locked && (
         <div className="card-forest flex items-center gap-2 p-3 text-sm">
@@ -165,10 +174,8 @@ export function FullRunBuilder({
       {step === "groups" && (
         <section className="space-y-3">
           <StepHead
-            n="1"
             title="Rank every group"
-            desc="Tap teams 1st → 4th. Tap again to deselect. This also feeds the Group Stage competition."
-            badge={`${completeGroups.length}/12`}
+            desc="Tap teams 1st → 4th — they reorder as you go. Tap again to remove. This also feeds the Group Stage competition."
           />
           <div className="grid gap-3 sm:grid-cols-2">
             {groups.map((g) => (
@@ -182,12 +189,6 @@ export function FullRunBuilder({
               />
             ))}
           </div>
-          <NextBar
-            disabled={!allGroupsDone}
-            hint={allGroupsDone ? undefined : "Finish all 12 groups to continue"}
-            onClick={() => setStep("thirds")}
-            label="Next · pick the 8 thirds"
-          />
         </section>
       )}
 
@@ -199,122 +200,140 @@ export function FullRunBuilder({
           thirds={thirds}
           toggle={toggleThird}
           locked={locked}
-          onBack={() => setStep("groups")}
-          onNext={() => setStep("bracket")}
           ready={allGroupsDone}
         />
       )}
 
       {step === "bracket" && (
-        <BracketStep
-          resolved={resolved}
-          teamMap={teamMap}
-          pickWinner={pickWinner}
-          locked={locked}
-          champion={champion}
-          saved={bracketSaved}
-          ready={thirds.length === 8}
-          onBack={() => setStep("thirds")}
-          onNext={() => setStep("review")}
-        />
+        <section className="space-y-3">
+          {thirds.length === 8 ? (
+            <>
+              <StepHead
+                title="The bracket"
+                desc="Both halves of the draw meet at the final. Tap a team in each tie to send them through."
+              />
+              <BracketTree
+                resolved={resolved}
+                teamMap={teamMap}
+                thirds={thirds}
+                onPick={pickWinner}
+                locked={locked}
+              />
+            </>
+          ) : (
+            <Gate msg="Pick your 8 thirds first." />
+          )}
+        </section>
       )}
+    </div>
+  );
+}
 
-      {step === "review" && (
-        <ReviewStep
-          champion={champion}
-          teamMap={teamMap}
-          completeGroups={completeGroups.length}
-          thirdsCount={thirds.length}
-          resolved={resolved}
-          saved={bracketSaved}
-          onEdit={() => setStep("groups")}
-        />
-      )}
+// ── header ─────────────────────────────────────────────────────────────────────
+function BracketHeader({
+  step,
+  setStep,
+  groupsDone,
+  thirdsCount,
+  ko,
+  saved,
+  advance,
+  allGroupsDone,
+  userId,
+}: {
+  step: Step;
+  setStep: (s: Step) => void;
+  groupsDone: number;
+  thirdsCount: number;
+  ko: { picked: number; total: number };
+  saved: boolean | undefined;
+  advance: { label: string; ready: boolean; go: () => void } | null;
+  allGroupsDone: boolean;
+  userId: string;
+}) {
+  const [shared, setShared] = useState(false);
+  const tabs = [
+    { key: "groups" as Step, label: "Groups", count: `${groupsDone}/12`, reach: true },
+    { key: "thirds" as Step, label: "Best 3rd", count: `${thirdsCount}/8`, reach: allGroupsDone },
+    {
+      key: "bracket" as Step,
+      label: "Knockout",
+      count: `${ko.picked}/${ko.total}`,
+      reach: allGroupsDone && thirdsCount === 8,
+    },
+  ];
+  const overall = Math.round(
+    ((groupsDone + thirdsCount + ko.picked) / (12 + 8 + ko.total)) * 100,
+  );
+  const active = TABS.find((t) => t.key === step);
+
+  function share() {
+    const url = `${window.location.origin}/picks/${userId}`;
+    void navigator.clipboard?.writeText(url).then(() => {
+      setShared(true);
+      setTimeout(() => setShared(false), 1800);
+    });
+  }
+
+  return (
+    <div className="card space-y-3 p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="display text-lg text-forest">
+          {active?.label}{" "}
+          <span className="text-sm tabular text-charcoal/40">
+            {tabs.find((t) => t.key === step)?.count}
+          </span>
+        </h2>
+        <span className="text-xs tabular text-charcoal/50">{overall}% complete</span>
+      </div>
+
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-gold/15">
+        <div className="h-full bg-forest transition-all" style={{ width: `${overall}%` }} />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              disabled={!t.reach}
+              onClick={() => t.reach && setStep(t.key)}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                step === t.key
+                  ? "bg-forest text-cream"
+                  : t.reach
+                    ? "bg-gold/10 text-forest hover:bg-gold/20"
+                    : "bg-gold/5 text-charcoal/30"
+              }`}
+            >
+              {t.label} <span className="tabular opacity-70">{t.count}</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          {saved !== undefined && <span className="chip">{saved ? "saved ✓" : "saving…"}</span>}
+          {advance && (
+            <button className="btn btn-primary text-sm" disabled={!advance.ready} onClick={advance.go}>
+              {advance.label} →
+            </button>
+          )}
+          {step === "bracket" && (
+            <button className="btn btn-ghost text-sm" onClick={share}>
+              {shared ? "Link copied ✓" : "Share bracket"}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
 // ── pieces ───────────────────────────────────────────────────────────────────
-function Stepper({
-  step,
-  setStep,
-  allGroupsDone,
-  thirdsCount,
-}: {
-  step: Step;
-  setStep: (s: Step) => void;
-  allGroupsDone: boolean;
-  thirdsCount: number;
-}) {
-  const idx = STEPS.findIndex((s) => s.key === step);
+function StepHead({ title, desc }: { title: string; desc: string }) {
   return (
-    <div className="flex items-center gap-1.5">
-      {STEPS.map((s, i) => {
-        const reachable =
-          i === 0 ||
-          (i === 1 && allGroupsDone) ||
-          (i >= 2 && allGroupsDone && thirdsCount === 8);
-        const active = i === idx;
-        return (
-          <button
-            key={s.key}
-            disabled={!reachable}
-            onClick={() => reachable && setStep(s.key)}
-            className={`flex flex-1 flex-col items-center gap-1 rounded-lg py-1.5 transition-colors ${
-              reachable ? "" : "opacity-40"
-            }`}
-          >
-            <span className={`h-1 w-full rounded-full ${i <= idx ? "bg-forest" : "bg-gold/20"}`} />
-            <span
-              className={`label-caps text-[10px] ${active ? "text-forest" : "text-charcoal/50"}`}
-            >
-              {s.label}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function StepHead({ n, title, desc, badge }: { n: string; title: string; desc: string; badge?: string }) {
-  return (
-    <div className="flex items-start justify-between gap-3">
-      <div>
-        <p className="eyebrow">Step {n}</p>
-        <h2 className="display text-2xl text-forest">{title}</h2>
-        <p className="mt-1 text-sm text-charcoal/70">{desc}</p>
-      </div>
-      {badge && <span className="chip shrink-0">{badge}</span>}
-    </div>
-  );
-}
-
-function NextBar({
-  disabled,
-  hint,
-  onClick,
-  label,
-  onBack,
-}: {
-  disabled?: boolean;
-  hint?: string;
-  onClick: () => void;
-  label: string;
-  onBack?: () => void;
-}) {
-  return (
-    <div className="sticky bottom-3 z-30 mt-4 flex items-center justify-between gap-3 rounded-full border border-gold/30 bg-cream/90 px-3 py-2 shadow-vintage-lg backdrop-blur">
-      {onBack ? (
-        <button className="btn btn-ghost text-sm" onClick={onBack}>
-          ← Back
-        </button>
-      ) : (
-        <span className="px-2 text-xs text-charcoal/50">{hint ?? ""}</span>
-      )}
-      <button className="btn btn-primary" disabled={disabled} onClick={onClick}>
-        {label}
-      </button>
+    <div>
+      <h2 className="display text-2xl text-forest">{title}</h2>
+      <p className="mt-1 text-sm text-charcoal/70">{desc}</p>
     </div>
   );
 }
@@ -326,8 +345,6 @@ function ThirdsStep({
   thirds,
   toggle,
   locked,
-  onBack,
-  onNext,
   ready,
 }: {
   groups: Group[];
@@ -336,21 +353,16 @@ function ThirdsStep({
   thirds: string[];
   toggle: (g: string) => void;
   locked: boolean;
-  onBack: () => void;
-  onNext: () => void;
   ready: boolean;
 }) {
-  if (!ready)
-    return <Gate msg="Finish ranking all 12 groups first." onBack={onBack} backLabel="← Back to groups" />;
+  if (!ready) return <Gate msg="Finish ranking all 12 groups first." />;
   return (
     <section className="space-y-3">
       <StepHead
-        n="2"
         title="Best 8 third-placed teams"
         desc="8 of the 12 group-3rd teams reach the Round of 32. Pick which 8 advance."
-        badge={`${thirds.length}/8`}
       />
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {groups.map((g) => {
           const t = teamMap.get(orders[g.id]?.[2] ?? "");
           const on = thirds.includes(g.id);
@@ -379,201 +391,14 @@ function ThirdsStep({
           );
         })}
       </div>
-      <NextBar
-        onBack={onBack}
-        disabled={thirds.length !== 8}
-        onClick={onNext}
-        label="Next · fill the bracket"
-      />
     </section>
   );
 }
 
-function BracketStep({
-  resolved,
-  teamMap,
-  pickWinner,
-  locked,
-  champion,
-  saved,
-  ready,
-  onBack,
-  onNext,
-}: {
-  resolved: Record<number, Resolved>;
-  teamMap: Map<string, Team>;
-  pickWinner: (m: number, t: string) => void;
-  locked: boolean;
-  champion: string | null;
-  saved: boolean;
-  ready: boolean;
-  onBack: () => void;
-  onNext: () => void;
-}) {
-  if (!ready) return <Gate msg="Pick your 8 thirds first." onBack={onBack} backLabel="← Back to thirds" />;
-
-  const rounds: { round: Round; ids: number[] }[] = [
-    { round: "R32", ids: R32.map((m) => m.id) },
-    { round: "R16", ids: KO.filter((m) => m.round === "R16").map((m) => m.id) },
-    { round: "QF", ids: KO.filter((m) => m.round === "QF").map((m) => m.id) },
-    { round: "SF", ids: KO.filter((m) => m.round === "SF").map((m) => m.id) },
-    { round: "final", ids: [FINAL_MATCH] },
-  ];
-
-  return (
-    <section className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="eyebrow">Step 3</p>
-          <h2 className="display text-2xl text-forest">Fill the bracket</h2>
-          <p className="mt-1 text-sm text-charcoal/70">Tap the team you predict to advance in each tie.</p>
-        </div>
-        <span className="chip shrink-0">{saved ? "saved ✓" : "saving…"}</span>
-      </div>
-
-      {champion && (
-        <div className="card-forest flex items-center gap-3 p-4">
-          <span className="text-2xl">🏆</span>
-          <div>
-            <p className="label-caps text-[10px] text-gold">Your champion</p>
-            <p className="display text-xl text-cream">{teamMap.get(champion)?.name}</p>
-          </div>
-        </div>
-      )}
-
-      {rounds.map(({ round, ids }) => (
-        <div key={round} className="space-y-2">
-          <p className="eyebrow">{ROUND_LABEL[round]}</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {ids.map((id) => (
-              <MatchCard
-                key={id}
-                m={resolved[id]}
-                teamMap={teamMap}
-                onPick={(t) => pickWinner(id, t)}
-                locked={locked}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-
-      <NextBar onBack={onBack} onClick={onNext} label="Review →" />
-    </section>
-  );
-}
-
-function MatchCard({
-  m,
-  teamMap,
-  onPick,
-  locked,
-}: {
-  m: Resolved | undefined;
-  teamMap: Map<string, Team>;
-  onPick: (t: string) => void;
-  locked: boolean;
-}) {
-  const row = (teamId: string | null) => {
-    const t = teamId ? teamMap.get(teamId) : null;
-    const isWinner = teamId && m?.winner === teamId;
-    const pickable = !locked && teamId;
-    return (
-      <button
-        disabled={!pickable}
-        onClick={() => teamId && onPick(teamId)}
-        className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${
-          isWinner ? "bg-gold/20" : "hover:bg-gold/[0.06]"
-        } ${pickable ? "" : "cursor-default"}`}
-      >
-        {t ? (
-          <>
-            <Flag code={t.flag_code} size={22} />
-            <span
-              className={`flex-1 truncate text-sm ${
-                isWinner ? "font-semibold text-forest" : "text-charcoal/80"
-              }`}
-            >
-              {t.name}
-            </span>
-            {isWinner && <span className="text-gold-dark">✓</span>}
-          </>
-        ) : (
-          <span className="flex-1 truncate text-sm italic text-charcoal/35">—</span>
-        )}
-      </button>
-    );
-  };
-  return (
-    <div className="card overflow-hidden !shadow-vintage-sm">
-      {row(m?.a ?? null)}
-      <div className="border-t border-gold/10" />
-      {row(m?.b ?? null)}
-    </div>
-  );
-}
-
-function ReviewStep({
-  champion,
-  teamMap,
-  completeGroups,
-  thirdsCount,
-  resolved,
-  saved,
-  onEdit,
-}: {
-  champion: string | null;
-  teamMap: Map<string, Team>;
-  completeGroups: number;
-  thirdsCount: number;
-  resolved: Record<number, Resolved>;
-  saved: boolean;
-  onEdit: () => void;
-}) {
-  const final = resolved[FINAL_MATCH];
-  const finalists = [final?.a, final?.b].filter(Boolean) as string[];
-  return (
-    <section className="space-y-4">
-      <StepHead n="4" title="Your full run" desc="Everything saves automatically. You can tweak until kickoff." />
-      <div className="card-forest p-6 text-center">
-        <p className="label-caps text-[10px] text-gold">Predicted champion</p>
-        <p className="display mt-1 text-3xl text-cream">
-          {champion ? teamMap.get(champion)?.name : "—"}
-        </p>
-        {finalists.length === 2 && (
-          <p className="mt-2 text-sm text-cream/70">
-            Final: {finalists.map((f) => teamMap.get(f)?.name).join(" vs ")}
-          </p>
-        )}
-      </div>
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="Groups" value={`${completeGroups}/12`} />
-        <Stat label="Thirds" value={`${thirdsCount}/8`} />
-        <Stat label="Saved" value={saved ? "✓" : "…"} />
-      </div>
-      <button className="btn btn-ghost w-full" onClick={onEdit}>
-        Edit predictions
-      </button>
-    </section>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="card flex flex-col items-center p-3">
-      <span className="font-mono text-xl font-bold text-forest tabular">{value}</span>
-      <span className="label-caps mt-0.5 text-[10px] text-charcoal/50">{label}</span>
-    </div>
-  );
-}
-
-function Gate({ msg, onBack, backLabel }: { msg: string; onBack: () => void; backLabel: string }) {
+function Gate({ msg }: { msg: string }) {
   return (
     <div className="card p-8 text-center">
       <p className="text-sm text-charcoal/70">{msg}</p>
-      <button className="btn btn-ghost mt-4" onClick={onBack}>
-        {backLabel}
-      </button>
     </div>
   );
 }

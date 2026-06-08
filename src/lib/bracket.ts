@@ -131,9 +131,82 @@ export function resolveBracket(
 
 export const FINAL_MATCH = 104;
 
+export const KO_ROUNDS: Round[] = ["R32", "R16", "QF", "SF", "final"];
+
+// Left half feeds SF 101, right half feeds SF 102. Walk parents down to R32 leaves.
+function collectSide(root: number): Set<number> {
+  const koById = new Map(KO.map((m) => [m.id, m]));
+  const out = new Set<number>();
+  const stack = [root];
+  while (stack.length) {
+    const id = stack.pop()!;
+    out.add(id);
+    const ko = koById.get(id);
+    if (ko) stack.push(ko.a, ko.b);
+  }
+  return out;
+}
+const LEFT = collectSide(101);
+const RIGHT = collectSide(102);
+
+/** Match ids for one round, split into left/right halves of the draw, in stable order. */
+export function roundHalves(round: Round): { left: number[]; right: number[] } {
+  if (round === "final") return { left: [FINAL_MATCH], right: [] };
+  const ids =
+    round === "R32"
+      ? R32.map((m) => m.id)
+      : KO.filter((m) => m.round === round).map((m) => m.id);
+  return {
+    left: ids.filter((id) => LEFT.has(id)),
+    right: ids.filter((id) => RIGHT.has(id)),
+  };
+}
+
 /** Count of winners picked across all knockout matches (for progress). */
 export function bracketProgress(winners: Record<number, string>): { picked: number; total: number } {
   const total = R32.length + KO.length; // 16 + 15 = 31
   const picked = [...R32, ...KO].filter((m) => winners[m.id]).length;
   return { picked, total };
+}
+
+// ── full two-sided bracket tree (desktop) ────────────────────────────────────
+
+/** Parent KO match each match feeds into (R32 + KO ids → the match above them). */
+export const PARENT: Record<number, number> = (() => {
+  const p: Record<number, number> = {};
+  for (const m of KO) {
+    p[m.a] = m.id;
+    p[m.b] = m.id;
+  }
+  return p;
+})();
+
+/** Per-round match ids under a side root, in top→bottom bracket order (DFS a-before-b). */
+export function treeOrder(root: number): Record<Round, number[]> {
+  const koById = new Map(KO.map((m) => [m.id, m]));
+  const out: Record<Round, number[]> = { R32: [], R16: [], QF: [], SF: [], final: [] };
+  const visit = (id: number) => {
+    const ko = koById.get(id);
+    if (!ko) {
+      out.R32.push(id);
+      return;
+    }
+    out[ko.round].push(id);
+    visit(ko.a);
+    visit(ko.b);
+  };
+  visit(root);
+  return out;
+}
+export const LEFT_ORDER = treeOrder(101); // feeds SF 101
+export const RIGHT_ORDER = treeOrder(102); // feeds SF 102
+
+/** Qualification-slot labels (e.g. "1E", "2A", "3C") for an R32 match's two teams. */
+export function r32Labels(matchId: number, thirds: string[]): { a: string; b: string } {
+  const m = R32.find((x) => x.id === matchId);
+  if (!m) return { a: "", b: "" };
+  const thirdBy = thirdGroupByMatch(thirds);
+  const lab = (s: Slot): string =>
+    s.k === "W" ? `1${s.g}` : s.k === "R" ? `2${s.g}` : s.k === "3" ? (thirdBy[matchId] ? `3${thirdBy[matchId]}` : "3?") : "";
+  return { a: lab(m.a), b: lab(m.b) };
 }

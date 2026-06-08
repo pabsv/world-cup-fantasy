@@ -10,7 +10,7 @@ insert into public.competitions (league_id, type, title, subtitle, locks_at, sta
   ('11111111-1111-1111-1111-111111111111', 'group_standings', 'Group Stage',
    'Rank all 4 teams in every group', '2026-06-11T19:00:00-06:00', 'open',
    '{"group":{"positions":{"1":5,"2":3,"3":2,"4":1},"perfect_bonus":5}}'::jsonb, 1),
-  ('11111111-1111-1111-1111-111111111111', 'og_full', 'OG Full Run',
+  ('11111111-1111-1111-1111-111111111111', 'og_full', 'Full World Cup Prediction',
    'Predict the entire tournament before kickoff', '2026-06-11T19:00:00-06:00', 'open',
    '{"group":{"positions":{"1":5,"2":3,"3":2,"4":1},"perfect_bonus":5},"knockout":{"R32":1,"R16":2,"QF":4,"SF":6,"final":8,"champion":12},"third_place":1}'::jsonb, 2)
 on conflict (league_id, type) do nothing;

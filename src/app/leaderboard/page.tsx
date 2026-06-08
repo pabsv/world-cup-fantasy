@@ -58,7 +58,9 @@ export default async function LeaderboardPage({
 
   const tabs = [
     { key: "overall", label: "Overall" },
-    ...competitions.map((cc) => ({ key: cc.id, label: cc.title })),
+    ...competitions
+      .filter((cc) => cc.type !== "group_standings")
+      .map((cc) => ({ key: cc.id, label: cc.title })),
   ];
 
   return (
