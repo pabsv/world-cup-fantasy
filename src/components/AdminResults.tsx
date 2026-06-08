@@ -71,9 +71,9 @@ export function AdminResults({
         const st = states[g.id];
         return (
           <div key={g.id} className="card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-              <h3 className="text-sm font-bold">
-                <span className="text-muted">Group</span> {g.id}
+            <div className="flex items-center justify-between border-b border-gold/20 px-4 py-2.5">
+              <h3 className="display text-sm font-bold text-forest">
+                <span className="text-charcoal/70">Group</span> {g.id}
               </h3>
               <button
                 className="btn btn-primary px-3 py-1 text-xs"
@@ -83,33 +83,33 @@ export function AdminResults({
                 {st === "saving" ? "Saving…" : st === "saved" ? "Saved ✓" : "Save result"}
               </button>
             </div>
-            <ul className="divide-y divide-[var(--border)]">
+            <ul className="divide-y divide-gold/15">
               {orders[g.id].map((teamId, i) => {
                 const t = teamMap.get(teamId);
                 if (!t) return null;
                 return (
                   <li key={teamId} className="flex items-center gap-3 px-3 py-2.5">
                     <span
-                      className={`grid h-6 w-6 place-items-center rounded-md text-xs font-bold ${
-                        i === 0 ? "bg-accent text-[var(--accent-ink)]" : "bg-surface-2 text-muted"
+                      className={`tabular grid h-6 w-6 place-items-center rounded-md font-mono text-xs font-bold ${
+                        i === 0 ? "bg-forest text-cream" : "bg-paper text-charcoal/70"
                       }`}
                     >
                       {i + 1}
                     </span>
                     <Flag code={t.flag_code} size={24} />
-                    <span className="flex-1 truncate text-sm">{t.name}</span>
+                    <span className="flex-1 truncate text-sm text-charcoal">{t.name}</span>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => move(g.id, i, -1)}
                         disabled={i === 0}
-                        className="grid h-7 w-7 place-items-center rounded-lg border border-border bg-surface-2 text-muted enabled:hover:text-foreground disabled:opacity-25"
+                        className="grid h-7 w-7 place-items-center rounded-lg border border-gold/20 bg-paper text-charcoal/70 enabled:hover:text-forest disabled:opacity-25"
                       >
                         ↑
                       </button>
                       <button
                         onClick={() => move(g.id, i, 1)}
                         disabled={i === 3}
-                        className="grid h-7 w-7 place-items-center rounded-lg border border-border bg-surface-2 text-muted enabled:hover:text-foreground disabled:opacity-25"
+                        className="grid h-7 w-7 place-items-center rounded-lg border border-gold/20 bg-paper text-charcoal/70 enabled:hover:text-forest disabled:opacity-25"
                       >
                         ↓
                       </button>
@@ -119,7 +119,7 @@ export function AdminResults({
               })}
             </ul>
             {st === "error" && (
-              <p className="border-t border-border px-3 py-1.5 text-center text-xs text-[var(--danger)]">
+              <p className="border-t border-gold/20 px-3 py-1.5 text-center text-xs text-[#b91c1c]">
                 Save failed — are you admin?
               </p>
             )}

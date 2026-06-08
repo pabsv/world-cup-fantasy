@@ -59,28 +59,28 @@ export default async function PicksPage({
 
   return (
     <div className="space-y-5">
-      <Link href="/leaderboard" className="text-sm text-muted hover:text-foreground">
+      <Link href="/leaderboard" className="eyebrow text-gold-dark hover:text-forest">
         ← Leaderboard
       </Link>
       <header className="flex items-center gap-3">
         <Avatar name={profile.display_name} id={userId} size={44} />
         <div>
-          <h1 className="text-xl font-bold tracking-tight">
+          <h1 className="display text-xl text-forest">
             {profile.display_name ?? "Player"}
             {isMe && <span className="ml-2 chip">you</span>}
           </h1>
-          <p className="text-sm text-muted">Group stage picks</p>
+          <p className="eyebrow text-gold-dark">Group stage picks</p>
         </div>
         {resByGroup.size > 0 && (
-          <span className="ml-auto tabular text-2xl font-bold text-accent">
+          <span className="ml-auto tabular font-mono text-2xl font-bold text-gold-dark">
             {total}
-            <span className="ml-1 text-sm font-normal text-muted">pts</span>
+            <span className="ml-1 text-sm font-normal text-charcoal/70">pts</span>
           </span>
         )}
       </header>
 
       {hidden ? (
-        <div className="card p-8 text-center text-sm text-muted">
+        <div className="card p-8 text-center text-sm text-charcoal/70">
           🔒 These picks are hidden until predictions lock at kickoff.
         </div>
       ) : (
@@ -93,9 +93,9 @@ export default async function PicksPage({
             const perfect = res && order.every((t, i) => t === res[i]);
             return (
               <div key={g.id} className="card overflow-hidden">
-                <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-                  <h3 className="text-sm font-bold">
-                    <span className="text-muted">Group</span> {g.id}
+                <div className="flex items-center justify-between border-b border-gold/20 px-4 py-2.5">
+                  <h3 className="display text-sm text-forest">
+                    <span className="eyebrow text-gold-dark">Group</span> {g.id}
                   </h3>
                   {gpoints !== null && (
                     <span className="chip">
@@ -104,27 +104,42 @@ export default async function PicksPage({
                     </span>
                   )}
                 </div>
-                <ul className="divide-y divide-[var(--border)]">
+                <ul className="divide-y divide-gold/15">
                   {order.map((teamId, i) => {
                     const t = teamMap.get(teamId);
                     if (!t) return null;
                     const correct = res ? res[i] === teamId : null;
                     return (
-                      <li key={teamId} className="flex items-center gap-3 px-3 py-2.5">
-                        <span className="w-5 text-center text-xs font-bold text-muted">{i + 1}</span>
+                      <li
+                        key={teamId}
+                        className={`flex items-center gap-3 px-3 py-2.5${
+                          correct === true ? " bg-gold/10" : ""
+                        }`}
+                      >
+                        <span className="w-5 text-center font-mono text-xs font-bold text-charcoal/40">
+                          {i + 1}
+                        </span>
                         <Flag code={t.flag_code} size={24} />
-                        <span className="flex-1 truncate text-sm">{t.name}</span>
+                        <span
+                          className={`flex-1 truncate text-sm${
+                            correct === false ? " text-charcoal/40" : " text-charcoal"
+                          }`}
+                        >
+                          {t.name}
+                        </span>
                         {correct === true && (
-                          <span className="text-sm text-accent">+{positionPoints(cfg, i + 1)}</span>
+                          <span className="font-mono text-sm font-bold text-gold-dark">
+                            +{positionPoints(cfg, i + 1)}
+                          </span>
                         )}
-                        {correct === false && <span className="text-sm text-muted-2">✕</span>}
+                        {correct === false && <span className="text-sm text-charcoal/40">✕</span>}
                       </li>
                     );
                   })}
                 </ul>
                 {perfect && (
-                  <p className="border-t border-border px-3 py-1.5 text-center text-xs text-accent-strong">
-                    Perfect group · +{perfectBonus(cfg)} bonus
+                  <p className="border-t border-gold/40 bg-gold/15 px-3 py-1.5 text-center text-xs font-semibold text-gold-dark">
+                    ✨ Perfect group · +{perfectBonus(cfg)} bonus
                   </p>
                 )}
               </div>

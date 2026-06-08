@@ -8,7 +8,7 @@ import { Avatar } from "./Avatar";
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/predict", label: "Predict" },
-  { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/leaderboard", label: "League" },
 ];
 
 export function NavBar({
@@ -33,26 +33,24 @@ export function NavBar({
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-gold/25 bg-forest text-cream">
       <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent text-sm font-black text-[var(--accent-ink)]">
-            ⚽
-          </span>
-          <span className="text-sm font-bold tracking-tight">
-            WC26 <span className="text-muted font-medium">Fantasy</span>
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-gold text-sm">🏆</span>
+          <span className="display text-base font-bold">
+            WC26 <span className="font-normal text-cream/70">Fantasy</span>
           </span>
         </Link>
 
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-0.5">
           {links.map((l) => {
             const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
             return (
               <Link
                 key={l.href}
                 href={l.href}
-                className={`rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${
-                  active ? "bg-white/10 text-foreground" : "text-muted hover:text-foreground"
+                className={`rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  active ? "bg-cream/15 text-cream" : "text-cream/70 hover:text-cream"
                 }`}
               >
                 {l.label}
@@ -62,7 +60,7 @@ export function NavBar({
           <button
             onClick={signOut}
             title="Sign out"
-            className="ml-1 flex items-center gap-2 rounded-lg pl-1 pr-2 py-1 hover:bg-white/5"
+            className="ml-1 flex items-center gap-2 rounded-full p-0.5 hover:bg-cream/10"
           >
             <Avatar name={displayName} id={userId} size={26} />
           </button>

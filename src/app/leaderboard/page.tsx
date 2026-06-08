@@ -64,19 +64,20 @@ export default async function LeaderboardPage({
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">Leaderboard</h1>
-        <p className="mt-1 text-sm text-muted">
+        <p className="eyebrow">League standings</p>
+        <h1 className="display mt-1 text-3xl text-forest">League</h1>
+        <p className="mt-1 text-sm text-charcoal/70">
           {locked ? "Live standings across the league." : "Standings go live once predictions lock at kickoff."}
         </p>
       </header>
 
-      <div className="flex gap-1 overflow-x-auto rounded-xl bg-surface-2 p-1">
+      <div className="flex gap-1 overflow-x-auto rounded-xl bg-paper p-1">
         {tabs.map((t) => (
           <Link
             key={t.key}
             href={`/leaderboard?c=${t.key}`}
             className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-              tab === t.key ? "bg-white/10 text-foreground" : "text-muted hover:text-foreground"
+              tab === t.key ? "bg-gold/15 text-forest" : "text-charcoal/70 hover:text-forest"
             }`}
           >
             {t.label}
@@ -84,34 +85,42 @@ export default async function LeaderboardPage({
         ))}
       </div>
 
-      <div className="card divide-y divide-[var(--border)]">
+      <div className="card divide-y divide-gold/15 !p-0">
         {rows.map((r, i) => {
           const me = r.id === user?.id;
+          const rankColor =
+            i === 0
+              ? "text-gold-dark"
+              : i === 1
+                ? "text-sage"
+                : i === 2
+                  ? "text-burgundy"
+                  : "text-charcoal/40";
           return (
             <Link
               key={r.id}
               href={locked ? `/picks/${r.id}` : "#"}
               className={`flex items-center gap-3 px-4 py-3 ${
-                locked ? "transition-colors hover:bg-white/[0.03]" : "pointer-events-none"
+                locked ? "transition-colors hover:bg-gold/10" : "pointer-events-none"
               }`}
             >
-              <span className="w-6 text-center text-sm font-bold tabular text-muted">
+              <span className={`w-6 text-center font-mono text-sm font-bold tabular ${rankColor}`}>
                 {i + 1}
               </span>
               <Avatar name={r.name} id={r.id} size={32} />
-              <span className="flex-1 truncate font-medium">
+              <span className="flex-1 truncate font-medium text-charcoal">
                 {r.name}
                 {me && <span className="ml-2 chip">you</span>}
               </span>
-              <span className="tabular text-lg font-bold">
+              <span className="text-right font-mono text-lg font-bold tabular text-forest">
                 {r.points}
-                <span className="ml-1 text-xs font-normal text-muted">pts</span>
+                <span className="ml-1 text-xs font-normal text-charcoal/40">pts</span>
               </span>
             </Link>
           );
         })}
         {rows.length === 0 && (
-          <p className="px-4 py-8 text-center text-sm text-muted">No players yet.</p>
+          <p className="px-4 py-8 text-center text-sm text-charcoal/70">No players yet.</p>
         )}
       </div>
     </div>

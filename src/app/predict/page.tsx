@@ -1,6 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
-import { PredictBoard } from "@/components/PredictBoard";
-import { LEAGUE_ID, type Team, type Group, type Competition, type GroupPrediction } from "@/lib/types";
+import { FullRunBuilder } from "@/components/FullRunBuilder";
+import {
+  LEAGUE_ID,
+  type Team,
+  type Group,
+  type Competition,
+  type GroupPrediction,
+} from "@/lib/types";
 
 export default async function PredictPage() {
   const supabase = await createClient();
@@ -11,7 +17,7 @@ export default async function PredictPage() {
   const [{ data: groups }, { data: teams }, { data: comps }, { data: preds }] = await Promise.all([
     supabase.from("groups").select("*").order("id"),
     supabase.from("teams").select("*").order("group_id").order("seed"),
-    supabase.from("competitions").select("*").eq("type", "group_standings").limit(1),
+    supabase.from("competitions").select("*"),
     supabase
       .from("group_predictions")
       .select("*")
@@ -19,29 +25,45 @@ export default async function PredictPage() {
       .eq("user_id", user!.id),
   ]);
 
-  const comp = (comps?.[0] ?? null) as Competition | null;
-  const kickoff = comp?.locks_at ?? "2026-06-11T19:00:00-06:00";
+  const competitions = (comps ?? []) as Competition[];
+  const og = competitions.find((c) => c.type === "og_full")!;
+  const groupComp = competitions.find((c) => c.type === "group_standings");
+  const kickoff = groupComp?.locks_at ?? og.locks_at;
   const locked = new Date(kickoff).getTime() <= Date.now();
 
-  const initial: Record<string, string[]> = {};
-  for (const p of (preds ?? []) as GroupPrediction[]) initial[p.group_id] = p.predicted_order;
+  const initialOrders: Record<string, string[]> = {};
+  for (const p of (preds ?? []) as GroupPrediction[]) initialOrders[p.group_id] = p.predicted_order;
+
+  // existing OG bracket payload
+  const { data: bp } = await supabase
+    .from("bracket_predictions")
+    .select("payload")
+    .eq("competition_id", og.id)
+    .eq("user_id", user!.id)
+    .maybeSingle();
+  const payload = (bp?.payload ?? {}) as { thirds?: string[]; winners?: Record<number, string> };
 
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">Group Stage</h1>
-        <p className="mt-1 text-sm text-muted">
-          Rank all 4 teams in each group, 1st to 4th. Order auto-saves.
+        <p className="eyebrow">OG Full Run</p>
+        <h1 className="display text-3xl text-forest">Predict the whole World Cup</h1>
+        <p className="mt-1 text-sm text-charcoal/70">
+          One prediction, the entire tournament — groups, the best thirds, and every knockout tie to
+          the champion.
         </p>
       </header>
 
-      <PredictBoard
+      <FullRunBuilder
         userId={user!.id}
         leagueId={LEAGUE_ID}
+        ogCompId={og.id}
         locked={locked}
         groups={(groups ?? []) as Group[]}
         teams={(teams ?? []) as Team[]}
-        initial={initial}
+        initialOrders={initialOrders}
+        initialThirds={payload.thirds ?? []}
+        initialWinners={payload.winners ?? {}}
       />
     </div>
   );

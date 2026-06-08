@@ -17,19 +17,16 @@ function diff(target: number) {
 function Unit({ value, label }: { value: number | null; label: string }) {
   return (
     <div className="flex flex-col items-center">
-      <span className="tabular text-3xl font-bold sm:text-4xl">
+      <span className="font-mono tabular text-3xl font-semibold text-cream sm:text-4xl">
         {value === null ? "––" : String(value).padStart(2, "0")}
       </span>
-      <span className="mt-1 text-[10px] font-medium uppercase tracking-widest text-muted">
-        {label}
-      </span>
+      <span className="label-caps mt-1.5 text-[10px] font-medium text-gold">{label}</span>
     </div>
   );
 }
 
 export function Countdown({ iso }: { iso: string }) {
   const target = new Date(iso).getTime();
-  // null until mounted -> avoids SSR/client hydration mismatch on the clock.
   const [t, setT] = useState<ReturnType<typeof diff> | null>(null);
 
   useEffect(() => {
@@ -40,12 +37,12 @@ export function Countdown({ iso }: { iso: string }) {
 
   if (t?.done) {
     return (
-      <div className="flex items-center gap-2 text-pink">
+      <div className="flex items-center gap-2 text-gold">
         <span className="relative flex h-2.5 w-2.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-pink opacity-60" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-pink" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold opacity-60" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-gold" />
         </span>
-        <span className="font-semibold">The tournament has kicked off</span>
+        <span className="display font-semibold">The tournament has kicked off</span>
       </div>
     );
   }
@@ -53,11 +50,11 @@ export function Countdown({ iso }: { iso: string }) {
   return (
     <div className="flex items-center gap-4 sm:gap-6">
       <Unit value={t?.days ?? null} label="days" />
-      <span className="text-2xl text-muted/40">:</span>
+      <span className="text-2xl text-gold/40">:</span>
       <Unit value={t?.hours ?? null} label="hrs" />
-      <span className="text-2xl text-muted/40">:</span>
+      <span className="text-2xl text-gold/40">:</span>
       <Unit value={t?.mins ?? null} label="min" />
-      <span className="text-2xl text-muted/40">:</span>
+      <span className="text-2xl text-gold/40">:</span>
       <Unit value={t?.secs ?? null} label="sec" />
     </div>
   );

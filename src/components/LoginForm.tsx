@@ -50,7 +50,7 @@ export function LoginForm({ next }: { next: string }) {
 
   return (
     <div className="card p-5">
-      <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1">
+      <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-paper p-1">
         {(["signin", "signup"] as Mode[]).map((m) => (
           <button
             key={m}
@@ -61,7 +61,7 @@ export function LoginForm({ next }: { next: string }) {
               setInfo(null);
             }}
             className={`rounded-lg py-2 text-sm font-semibold transition-colors ${
-              mode === m ? "bg-white/10 text-foreground" : "text-muted hover:text-foreground"
+              mode === m ? "bg-gold/15 text-forest" : "text-charcoal/70 hover:text-forest"
             }`}
           >
             {m === "signin" ? "Sign in" : "Create account"}
@@ -72,7 +72,7 @@ export function LoginForm({ next }: { next: string }) {
       <form onSubmit={submit} className="space-y-3">
         {mode === "signup" && (
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted">Display name</label>
+            <label className="eyebrow mb-1.5 block">Display name</label>
             <input
               className="input"
               placeholder="What friends will see"
@@ -83,7 +83,7 @@ export function LoginForm({ next }: { next: string }) {
           </div>
         )}
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-muted">Email</label>
+          <label className="eyebrow mb-1.5 block">Email</label>
           <input
             className="input"
             type="email"
@@ -95,7 +95,7 @@ export function LoginForm({ next }: { next: string }) {
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-muted">Password</label>
+          <label className="eyebrow mb-1.5 block">Password</label>
           <input
             className="input"
             type="password"
@@ -109,12 +109,12 @@ export function LoginForm({ next }: { next: string }) {
         </div>
 
         {error && (
-          <p className="rounded-lg bg-[rgba(248,113,113,0.1)] px-3 py-2 text-sm text-[var(--danger)]">
+          <p className="rounded-lg bg-[rgba(185,28,28,0.08)] px-3 py-2 text-sm text-[#b91c1c]">
             {error}
           </p>
         )}
         {info && (
-          <p className="rounded-lg bg-[rgba(52,211,153,0.1)] px-3 py-2 text-sm text-accent-strong">
+          <p className="rounded-lg bg-gold/10 px-3 py-2 text-sm text-gold-dark">
             {info}
           </p>
         )}

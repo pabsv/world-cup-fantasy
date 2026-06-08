@@ -3,8 +3,11 @@
 Online World Cup 2026 prediction game to play with friends. Replaces a Spanish "porra" Excel (`Excel-Mundial-2026.xlsx` in this folder) with an online version. Full design lives in **[PLAN.md](PLAN.md)** — read it before building.
 
 ## Status
-- **v1 built 2026-06-08.** Next.js app scaffolded + working: auth (email+password), home (countdown/status), `/predict` (group-stage ranking loop, autosave), `/leaderboard`, `/picks/[userId]`, `/admin` (lock control + results entry). DB live, scoring verified end-to-end.
-- **Next:** OG Full Run bracket capture UI (`/predict/bracket` is a placeholder; DB + `og_full` competition already exist). Then deploy to Vercel.
+- **v2 built 2026-06-08.** Repo: https://github.com/pabsv/world-cup-fantasy (public). Working: public landing (`/` logged-out) + dashboard (logged-in), auth (email+password), **`/predict` = the OG Full Run builder** (groups → 8 thirds → full knockout bracket → champion, autosave), `/leaderboard` (now titled "League"), `/picks/[userId]`, `/admin`.
+- **UI = "vintage almanac" theme** (forest #1a3d2e + gold #c9a227 + cream #f5f1e8, Playfair Display serif, mahogany shadows, gold hairline borders) — copied from wcpredictor.app. Tokens in `src/app/globals.css`.
+- **Bracket = exact 2026 structure.** `src/lib/bracket.ts` (R32 slot defs, M89→104 tree) + `src/lib/thirdsTable.json` (the official 495-row Annex C third-place allocation, scraped via `scripts/build-thirds.mjs`). All 495 allocations validated against per-match eligibility. Verified end-to-end (groups→thirds→bracket→champion persists to `bracket_predictions.payload`).
+- **Next:** OG knockout SCORING (capture works; scoring accrues as `bracket_results` are entered — admin UI for knockout results still TODO). 3rd-place + knockout competitions. Deploy to Vercel.
+- ⚠️ A test account `pablovegarzv2@gmail.com` ("Pabs") exists with predictions — the owner's own test acct, left in place.
 - Hard deadline: **World Cup opens June 11, 2026.** Group stage June 11–27, knockouts from June 28, final July 19.
 
 ## Core concept
@@ -44,6 +47,8 @@ DB password AND the `sb_secret_…` secret key were **pasted in chat** — both 
 ## Common ops
 - Local dev: `npm run dev` (or preview via `.claude/launch.json` server "wcf", port 3000).
 - Apply migrations: `node scripts/migrate.mjs` (direct Postgres; tracks applied in `_wcf_migrations`).
-- Ad-hoc SQL: `node scripts/sql.mjs "select ..."`. Seed demo data: `node scripts/seed-demo.mjs`.
+- Ad-hoc SQL: `node scripts/sql.mjs "select ..."`. Rebuild thirds table: `node scripts/build-thirds.mjs`.
+- Demo/test users: `node scripts/seed-demo.mjs` (create), `node scripts/clean-demo.mjs` (wipe all users+data), `node scripts/temp-user.mjs create|delete`.
 - DO NOT use the Supabase MCP (wrong project — see above).
-- Deploy: push to Vercel; set `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` env vars there.
+- Deploy: push to Vercel (repo connected); set `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` env vars there.
+- ⚠️ Friends signup needs Supabase **Auth → Email → "Confirm email" OFF** (can't be toggled via API — owner does it in dashboard).

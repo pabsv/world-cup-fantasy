@@ -31,12 +31,12 @@ export function AdminLockForm({ locksAt }: { locksAt: string }) {
   return (
     <section className="card p-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Prediction lock</h2>
-        <span className={`chip ${isPast ? "text-[var(--danger)]" : "text-accent"}`}>
+        <h2 className="display font-semibold text-forest">Prediction lock</h2>
+        <span className={`chip ${isPast ? "text-[#b91c1c]" : "text-gold-dark"}`}>
           {isPast ? "locked now" : "open"}
         </span>
       </div>
-      <p className="mt-1 text-sm text-muted">
+      <p className="mt-1 text-sm text-charcoal/70">
         When predictions freeze and picks become public (Group Stage + OG Full Run).
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -56,8 +56,8 @@ export function AdminLockForm({ locksAt }: { locksAt: string }) {
         >
           Lock now
         </button>
-        {state === "saved" && <span className="text-sm text-accent">Saved ✓</span>}
-        {state === "error" && <span className="text-sm text-[var(--danger)]">Failed</span>}
+        {state === "saved" && <span className="text-sm text-gold-dark">Saved ✓</span>}
+        {state === "error" && <span className="text-sm text-[#b91c1c]">Failed</span>}
       </div>
     </section>
   );
