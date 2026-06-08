@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+/* ── World Cup 2026 Fantasy — dark theme tokens ─────────────────────────── */
+:root {
+  --background: #08090c;
+  --surface: #0f1116;
+  --surface-2: #151821;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --foreground: #eef0f4;
+  --muted: #8a909c;
+  --muted-2: #5d626d;
+  --accent: #34d399;       /* emerald */
+  --accent-strong: #6ee7b7;
+  --accent-ink: #042f25;
+  --pink: #f472b6;         /* 2026 highlight */
+  --gold: #fbbf24;
+  --danger: #f87171;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-pink: var(--pink);
+  --color-gold: var(--gold);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+* { border-color: var(--border); }
+
+html { color-scheme: dark; }
+
+body {
+  background:
+    radial-gradient(1100px 620px at 50% -10%, rgba(52, 211, 153, 0.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(244, 114, 182, 0.06), transparent 55%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+/* thin, dark scrollbars */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+
+@layer components {
+  .card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0)) , var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+  }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    font-weight: 600; border-radius: 0.75rem; padding: 0.625rem 1rem;
+    transition: transform .08s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
+    cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-strong); }
+  .btn-ghost { background: rgba(255,255,255,0.04); color: var(--foreground); border: 1px solid var(--border); }
+  .btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,0.08); }
+  .input {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 0.75rem; padding: 0.7rem 0.9rem; color: var(--foreground); outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(52,211,153,0.15); }
+  .input::placeholder { color: var(--muted-2); }
+  .chip {
+    display: inline-flex; align-items: center; gap: .35rem; font-size: .72rem; font-weight: 600;
+    padding: .2rem .55rem; border-radius: 99px; border: 1px solid var(--border);
+    color: var(--muted); background: rgba(255,255,255,0.03);
+  }
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
